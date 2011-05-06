@@ -9,7 +9,7 @@ To help prevent XSRF (cross site request forgery) simply add a nonce word (uniqu
 
 Note: This was written up in a couple of hours after reading about Daniel Seller's tokenizer (http://www.designfrontier.net/articles/?id=9). So of course the obvious question is...why write another?
 
-Well, there were a coupld of things I didn't like (just for me) about tokenizer and it really didn't take long to write. So thanks to Daniel for his already excellent script.
+Well, there were a couple of things I didn't like (just for me) about tokenizer and it really didn't take long to write. So thanks to Daniel for his already excellent script.
 
 
 Options
@@ -36,6 +36,24 @@ application.cfcs.SameOrigin.write("myformname");
 On your postback page, simple call the following to test true/false:
 
 application.cfcs.SameOrigin.check("myformname", form["__sononce"]);
+
+
+Example
+-------
+
+<cfif structKeyExists(form, "username")>
+	<cfset valid = application.cfcs.SameOrigin.check("login", form["__sononce"])>
+	<cfif valid>
+		<!--- All good, continue to process form --->
+	</cfif>
+</cfif>
+
+<form id="frm" action="" method="post">
+	#application.cfcs.SameOrigin.write("login")#
+	<input type="text" name="username" id="username" />
+	<input type="password" name="password" id="password" />
+	<input type="submit" name="btnSubmit" id="btnSubmit" value="Submit" />
+</form>
 
 
 Requirements / Caveats
