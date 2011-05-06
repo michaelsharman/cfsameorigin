@@ -1,0 +1,46 @@
+cfsameorigin - Ensures form POSTs are coming in from the same server that loaded the form
+-----------------------------------------------------------------------------------------
+
+
+Overview
+--------
+
+To help prevent XSRF (cross site request forgery) simply add a nonce word (unique, one time only value) to a form as a hidden field. Then on postback, check that hidden field value vs what should be in the users session. A match means a valid form post, a mismatch means either the session expired or a cross-site form post could have been executed.
+
+Note: This was written up in a couple of hours after reading about Daniel Seller's tokenizer (http://www.designfrontier.net/articles/?id=9). So of course the obvious question is...why write another?
+
+Well, there were a coupld of things I didn't like (just for me) about tokenizer and it really didn't take long to write. So thanks to Daniel for his already excellent script.
+
+
+Options
+-------
+
+All "keys" are stored in a single variable within session. The default is "__sononce". If you need/want to, you can set your own key on initialisation.
+
+If you have a site which works with and without sessions (as we do, http requests have no sessions...https do) this you can decide whether SameOrigin will throw an exception if sessions are not enabled. This is handy so you can leave the write() function in all your form code if you decide to turn off sessions. You'll just need to handle properly in your postback scripts.
+
+You can use SameOrigin on pages where you have multiple forms.
+
+
+Usage
+-----
+
+This is supposed to run as a singleton, so in your onApplicationStart() have something like:
+
+application.cfcs.SameOrigin = createObject("component", "SameOrigin").init();
+
+Then wherever you want to use it (i.e. inside <form> tags) call:
+
+application.cfcs.SameOrigin.write("myformname");
+
+On your postback page, simple call the following to test true/false:
+
+application.cfcs.SameOrigin.check("myformname", form["__sononce"]);
+
+
+Requirements / Caveats
+----------------------
+
+* You need to have session management enabled for this to work, it will do no checking if session management is not enabled (you can decide whether to throw an exception or not in this case)
+* Sticky sessions must be used when in a cluster, if sessions are replicated across the cluster this won't work as we're using SameOrigin as a singleton (i.e. a separate SameOrigin instance for each server in the cluster).
+* Requires ColdFusion 7+ or Railo 3+
