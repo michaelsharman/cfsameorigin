@@ -5,17 +5,17 @@ cfsameorigin - Ensures form POSTs are coming in from the same server that loaded
 Overview
 --------
 
-To help prevent XSRF (cross site request forgery) simply add a nonce word (unique, one time only value) to a form as a hidden field. Then on postback, check that hidden field value vs what should be in the users session. A match means a valid form post, a mismatch means either the session expired or a cross-site form post could have been executed.
+To help prevent XSRF (cross site request forgery) simply add a unique value to a users session and also to a form as a hidden field. Then on postback, check the hidden field value vs what should be in the users session. A match means a valid form post, a mismatch means either the session expired or a cross-site form post could have been executed.
 
 Note: This was written up in a couple of hours after reading about Daniel Seller's tokenizer (http://www.designfrontier.net/articles/?id=9). So of course the obvious question is...why write another?
 
-Well, there were a couple of things I didn't like (just for me) about tokenizer and it really didn't take long to write. So thanks to Daniel for his already excellent script.
+Well, there were a couple of things I didn't like (just for me) about tokenizer and this really didn't take long to write. So thanks to Daniel for his already excellent script.
 
 
 Options
 -------
 
-All "keys" are stored in a single variable within session. The default is "__sononce". If you need/want to, you can set your own key on initialisation.
+All "keys" are stored in a single variable within session. The default is "__sononce". If you need/want to, you can change this value to something else on initialisation.
 
 If you have a site which works with and without sessions (as we do, http requests have no sessions...https do) this you can decide whether SameOrigin will throw an exception if sessions are not enabled. This is handy so you can leave the write() function in all your form code if you decide to turn off sessions. You'll just need to handle properly in your postback scripts.
 
@@ -29,11 +29,11 @@ This is supposed to run as a singleton, so in your onApplicationStart() have som
 
 application.cfcs.SameOrigin = createObject("component", "SameOrigin").init();
 
-Then wherever you want to use it (i.e. inside <form> tags) call:
+Then wherever you want to use it (i.e. inside <form> tags) call write() to set a unique value and write the hidden form field. The only argument is a label for your form so you can reference it during the check():
 
 application.cfcs.SameOrigin.write("myformname");
 
-On your postback page, simple call the following to test true/false:
+On your postback page, simple call check('myformlabel') to test same origin true/false. The 2nd argument is the name of the hidden form field which SameOrigin generated:
 
 application.cfcs.SameOrigin.check("myformname", form["__sononce"]);
 

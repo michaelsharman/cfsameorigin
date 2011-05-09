@@ -11,6 +11,20 @@
 						: Sticky sessions must be used when in a cluster, if sessions are replicated across the cluster this
 						: won't work as we're using SameOrigin as a singleton (i.e. a separate SameOrigin instance for each server in the cluster).
 		Usage			: See https://github.com/michaelsharman/cfsameorigin/
+		Example			:
+			<cfif structKeyExists(form, "username")>
+			        <cfset valid = application.cfcs.SameOrigin.check("login", form["__sononce"])>
+			        <cfif valid>
+			                <!--- All good, continue to process form --->
+			        </cfif>
+			</cfif>
+			
+			<form id="frm" action="" method="post">
+			        #application.cfcs.SameOrigin.write("login")#
+			        <input type="text" name="username" id="username" />
+			        <input type="password" name="password" id="password" />
+			        <input type="submit" name="btnSubmit" id="btnSubmit" value="Submit" />
+			</form>
 	 --->
 	
 	<cffunction name="init" access="public" output="false" returnType="SameOrigin">
@@ -38,10 +52,11 @@
 		
 		<cfscript>
 			var check = false;
+			var fieldKey = sanitise(arguments.key);
 		
 			if (isSessionEnabled())
 			{
-				check = getNonce(arguments.key, arguments.nonce);
+				check = getNonce(fieldKey, arguments.nonce);
 			}
 		
 			return check;
@@ -70,13 +85,14 @@
 		<cfscript>
 			var nonceExists = false;
 			var sess = getSession();
+			var fieldKey = arguments.key;
 	
 			if (structKeyExists(sess, variables.instance.sameOriginName))
 			{
-				if (structKeyExists(sess[variables.instance.sameOriginName], arguments.key) AND sess[variables.instance.sameOriginName][arguments.key] EQ arguments.nonce)
+				if (structKeyExists(sess[variables.instance.sameOriginName], fieldKey) AND sess[variables.instance.sameOriginName][fieldKey] EQ arguments.nonce)
 				{
 					nonceExists = true;
-					deleteNonce(arguments.key);
+					deleteNonce(fieldKey);
 				}
 			}
 			
@@ -93,7 +109,7 @@
 	
 	<cffunction name="isSessionEnabled" access="private" output="false" returnType="boolean">
 		
-		<cfset var sessionsEnabled = getApplicationSettings().sessionmanagement>
+		<cfset var sessionsEnabled = application.getApplicationSettings().sessionmanagement>
 			
 		<cfif (NOT sessionsEnabled AND variables.instance.throwOnNoSession)>
 			<cfthrow type="sameorigin.nosession" message="Invalid SameOrigin call, sessions are not enabled!">
@@ -102,6 +118,17 @@
 		<cfreturn sessionsEnabled>
 	</cffunction>
 	
+
+	<cffunction name="sanitise" access="private" output="false" returnType="string" hint="Cleans up key/form field value">
+		<cfargument name="key" type="string" required="true" hint="Session/form field key name">
+		
+		<cfscript>
+			var fieldKey = replace(arguments.key, " ", "_", "all");
+			
+			return fieldKey;
+		</cfscript>
+	</cffunction>
+
 	
 	<cffunction name="setNonce" access="private" output="false" returntype="void">
 		<cfargument name="key" type="string" required="true">
@@ -126,11 +153,12 @@
 		<cfscript>			
 			var nonce = createUUID();
 			var output = "";
-			var frmId = variables.instance.sameOriginName & "__" & arguments.key;
+			var fieldKey = sanitise(arguments.key);
+			var frmId = variables.instance.sameOriginName & "__" & fieldKey;
 			
 			if (isSessionEnabled())
 			{
-				setNonce(arguments.key, nonce);
+				setNonce(fieldKey, nonce);
 				output = '<input type="hidden" name="#variables.instance.sameOriginName#" id="#frmId#" value="#nonce#" />';
 			}
 			
